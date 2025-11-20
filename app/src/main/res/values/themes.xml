@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Persona" parent="android:Theme.Material.Light.NoActionBar" />
+
+      <!-- Base application theme. -->
+      <!-- 将 parent 修改为 Theme.AppCompat 的子主题 -->
+        <!-- <style name="Theme.Persona" parent="Theme.AppCompat.Light.DarkActionBar">
+            <!- 在这里自定义您的主题颜色等属性 -->
+</resources>
