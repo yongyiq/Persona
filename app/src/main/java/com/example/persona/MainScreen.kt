@@ -1,5 +1,7 @@
 package com.example.persona
 
+import FeedScreen
+import PersonaCreationScreen
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -18,8 +20,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.persona.features.chat.ChatScreen
-import com.example.persona.features.creation.PersonaCreationScreen
-import com.example.persona.features.feed.FeedScreen
 import com.example.persona.features.me.MeScreen
 
 // 定义应用程序中的各个屏幕，这是一个密封类，用于表示有限的屏幕集合
@@ -51,38 +51,41 @@ val bottomNavItems = listOf(
 fun MainScreen() {
     // 创建一个 NavController 来处理导航
     val navController = rememberNavController()
-    // Scaffold 是一个提供基本应用布局结构的 Composable
+    // Scaffold 是一个提供基本应用布局结构的 Composable// 获取当前的导航后退栈条目
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
     Scaffold(
         // 定义底部导航栏
         bottomBar = {
-            NavigationBar {
-                // 获取当前的导航后退栈条目
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                // 获取当前的目的地
-                val currentDestination = navBackStackEntry?.destination
-                // 遍历底部导航项，为每一项创建一个 NavigationBarItem
-                bottomNavItems.forEach { screen ->
-                    NavigationBarItem(
-                        // 设置图标
-                        icon = { Icon(painterResource(id = screen.iconResId), contentDescription = screen.title) },
-                        // 设置标签
-                        label = { Text(screen.title) },
-                        // 判断当前项是否被选中
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                        // 设置点击事件
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                // 弹出到导航图的起始目的地，避免在后退栈中积累大量的目的地
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
+            if (currentRoute != AppScreen.PersonaCreation.route){
+                NavigationBar {
+
+                    // 获取当前的目的地
+                    val currentDestination = navBackStackEntry?.destination
+                    // 遍历底部导航项，为每一项创建一个 NavigationBarItem
+                    bottomNavItems.forEach { screen ->
+                        NavigationBarItem(
+                            // 设置图标
+                            icon = { Icon(painterResource(id = screen.iconResId), contentDescription = screen.title) },
+                            // 设置标签
+                            label = { Text(screen.title) },
+                            // 判断当前项是否被选中
+                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            // 设置点击事件
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    // 弹出到导航图的起始目的地，避免在后退栈中积累大量的目的地
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+                                    // 避免在栈顶重复创建同一个目的地
+                                    launchSingleTop = true
+                                    // 恢复状态
+                                    restoreState = true
                                 }
-                                // 避免在栈顶重复创建同一个目的地
-                                launchSingleTop = true
-                                // 恢复状态
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -91,7 +94,7 @@ fun MainScreen() {
         NavHost(
             navController = navController,
             // 设置起始目的地
-            startDestination = AppScreen.Feed.route,
+            startDestination = AppScreen.PersonaCreation.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             // “广场” 屏幕的 Composable
@@ -116,11 +119,22 @@ fun MainScreen() {
             }
             // “我的” 屏幕的 Composable
             composable(AppScreen.Me.route) {
-                MeScreen()
+                MeScreen(
+                    onNavigateToChat = { personaId ->
+                        navController.navigate(AppScreen.Chat.createRoute(personaId))
+                    }
+                )
             }
             // “创作” 屏幕的 Composable
             composable(AppScreen.PersonaCreation.route) {
-                PersonaCreationScreen()
+                PersonaCreationScreen(
+                    onCreationCompleted = {
+                        // 创作完成后，跳转到广场，并清空返回栈（防止用户按返回键回到创作页）
+                        navController.navigate(AppScreen.Feed.route) {
+                            popUpTo(AppScreen.PersonaCreation.route) { inclusive = true }
+                        }
+                    }
+                )
             }
         }
     }

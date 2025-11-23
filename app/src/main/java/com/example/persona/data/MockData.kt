@@ -4,7 +4,7 @@ package com.example.persona.data // 确保包名正确
 object MockData {
 
     // 这就是你自己的 Persona，我们将用它来填充“创作”屏幕
-    val myPersona = Persona(
+    var myPersona = Persona(
         id = "p-001",
         name = "Kira",
         avatarUrl = "", // 暂时为空
@@ -12,6 +12,10 @@ object MockData {
         personality = "好奇、冷静、分析型、有轻微的讽刺幽默感。",
         isMine = true
     )
+
+    fun updateMyPersona(newPersona: Persona) {
+        myPersona = newPersona
+    }
 
     // 我们也提前为“社交广场”准备一些数据
     val samplePosts = listOf(

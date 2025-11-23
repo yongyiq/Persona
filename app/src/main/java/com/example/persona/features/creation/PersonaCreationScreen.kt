@@ -1,13 +1,18 @@
-package com.example.persona.features.creation
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,65 +20,98 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.persona.features.creation.PersonaCreationViewModel
 
-// Persona 创作屏幕的 Composable 函数
 @Composable
 fun PersonaCreationScreen(
-    // 使用 viewModel() 获取 PersonaCreationViewModel 的实例
-    viewModel: PersonaCreationViewModel = viewModel()
+    viewModel: PersonaCreationViewModel = viewModel(),
+    onCreationCompleted: () -> Unit // <--- 新增回调：告诉 MainActivity "我完事了"
 ) {
-    // 从 ViewModel 中收集 UI 状态
     val uiState by viewModel.uiState.collectAsState()
 
-    // 使用 Column 在垂直方向上排列 UI 元素
     Column(
-        modifier = Modifier
-            .fillMaxSize() // 填充整个屏幕
-            .padding(16.dp), // 在四周添加 16dp 的内边距
-        horizontalAlignment = Alignment.CenterHorizontally // 水平居中对齐
+        modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()), // 加上滚动，防止屏幕不够高
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 显示标题
-        Text("创作你的 Persona", /* ... 在这里添加 style ... */)
-        // 添加一个 16dp 高的垂直间距
-        Spacer(modifier = Modifier.padding(16.dp))
+        Text("定义你的 AI 化身", style = MaterialTheme.typography.headlineMedium)
 
-        // "名称" 输入框
-        OutlinedTextField(
-            value = uiState.backgroundStory, // 输入框的值来自 UI 状态
-            onValueChange = { viewModel.onStoryChanged(it) }, // 当值改变时，调用 ViewModel 中的方法
-            label = { Text("名称") }, // 输入框的标签
-            modifier = Modifier.fillMaxWidth() // 填充最大宽度
-        )
-        // 添加一个 8dp 高的垂直间距
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // "个性" 输入框
-        OutlinedTextField(
-            value = uiState.personality, // 输入框的值来自 UI 状态
-            onValueChange = { viewModel.onPersonalityChanged(it) }, // 当值改变时，调用 ViewModel 中的方法
-            label = { Text("个性") }, // 输入框的标签
-            modifier = Modifier.fillMaxWidth(), // 填充最大宽度
-            minLines = 3 // 最小行数为 3
-        )
-
-        // 添加一个 24dp 高的垂直间距
         Spacer(modifier = Modifier.height(24.dp))
 
-        // "AI 辅助生成" 按钮
+        // --- 1. 主题输入区 ---
+        Text("你想扮演什么？(输入主题)", style = MaterialTheme.typography.labelLarge)
+        OutlinedTextField(
+            value = uiState.topic,
+            onValueChange = { viewModel.onTopicChanged(it) },
+            placeholder = { Text("例如：火星探险家、中世纪骑士...") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Button(
-            onClick = { viewModel.onGeneratePersonaClicked() }, // 点击时调用 ViewModel 中的方法
-            modifier = Modifier.fillMaxWidth() // 填充最大宽度
+            onClick = { viewModel.onGeneratePersonaClicked() },
+            enabled = !uiState.isLoading,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("AI 辅助生成")
+            if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("AI 正在构思中...")
+            } else {
+                Text("✨ AI 一键生成设定")
+            }
         }
 
-        // 如果正在加载，显示一个转圈的进度条
-        if (uiState.isLoading) {
-            // 添加一个 16dp 高的垂直间距
-            Spacer(modifier = Modifier.height(16.dp))
-            CircularProgressIndicator()
+        if (uiState.errorMsg != null) {
+            Text(uiState.errorMsg!!, color = MaterialTheme.colorScheme.error)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // --- 2. 结果编辑区 ---
+        OutlinedTextField(
+            value = uiState.name,
+            onValueChange = { viewModel.onNameChanged(it) },
+            label = { Text("名称") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // ... 这里的 BackgroundStory 和 Personality 输入框保持不变 ...
+        OutlinedTextField(
+            value = uiState.backgroundStory,
+            onValueChange = { viewModel.onStoryChanged(it) },
+            label = { Text("背景故事") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3
+        )
+
+        OutlinedTextField(
+            value = uiState.personality,
+            onValueChange = { viewModel.onPersonalityChanged(it) },
+            label = { Text("性格特征") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 2
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // --- 3. 完成按钮 ---
+        Button(
+            onClick = {
+                viewModel.onCompleteCreation() // 保存数据
+                onCreationCompleted()          // 跳转
+            },
+            enabled = uiState.name.isNotBlank(), // 只有名字不为空才能完成
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Text("完成设定，进入世界", fontSize = 18.sp)
         }
     }
 }
