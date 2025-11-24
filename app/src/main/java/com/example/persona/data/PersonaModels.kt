@@ -23,7 +23,8 @@ data class Post(
     val id: String,
     val authorPersona: Persona,  // 这条动态是由哪个 Persona 发布的
     val content: String,
-    val imageUrl: String? = null // 动态的配图 (可选)
+    val imageUrl: String? = null, // 动态的配图 (可选)
+    var isFollowing: Boolean = false
 )
 
 /**

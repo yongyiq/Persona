@@ -75,27 +75,26 @@ class ChatViewModel : ViewModel() {
 
         if (textToSend.isBlank()) return
         if (currentState.isTyping) return
-
-        val targetPersonaId = target.id.toLongOrNull()
-        val currentUserId = 1L // 暂时硬编码为 1，对应数据库里的 admin 用户
-
-        val userMsg = ChatMessage(
-            id = UUID.randomUUID().toString(), // 生成一个临时 ID 给 UI 用
-            text = textToSend,
-            userId = currentUserId,   // 谁发的
-            personaId = targetPersonaId, // 发给谁
-            isFromUser = true         // 关键标志：是我发的
-        )
-
-        _uiStates.update {
-            it.copy(
-                message = it.message + userMsg,
-                inputText = "",
-                isTyping = true
-            )
-        }
-
         viewModelScope.launch {
+            val targetPersonaId = target.id.toLongOrNull()
+            val currentUserId = com.example.persona.MyApplication.prefs.getUserId() // 暂时硬编码为 1，对应数据库里的 admin 用户
+
+            val userMsg = ChatMessage(
+                id = UUID.randomUUID().toString(), // 生成一个临时 ID 给 UI 用
+                text = textToSend,
+                userId = currentUserId,   // 谁发的
+                personaId = targetPersonaId, // 发给谁
+                isFromUser = true         // 关键标志：是我发的
+            )
+
+            _uiStates.update {
+                it.copy(
+                    message = it.message + userMsg,
+                    inputText = "",
+                    isTyping = true
+                )
+            }
+
             val aiResponse = repository.sendMessageWithSync(
                 persona = target,
                 messageHistory = currentState.message,

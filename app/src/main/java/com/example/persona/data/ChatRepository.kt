@@ -10,7 +10,7 @@ class ChatRepository {
     private val apiService = NetworkModule.apiService
     private val backendService = NetworkModule.backendService
 
-    private val currentUserId = 1L
+//    private val currentUserId = 1L
 
     // 新增：根据 ID 获取 Persona 对象
     suspend fun getPersonaById(id: String): Persona? {
@@ -36,6 +36,8 @@ class ChatRepository {
     suspend fun getHistoryFromBackend(personaId: String): List<ChatMessage> {
         return withContext(Dispatchers.IO) {
             try {
+            // 新增: 动态获取当前用户 ID
+                val currentUserId = com.example.persona.MyApplication.prefs.getUserId()
                 // personaId String -> Long
                 val pId = personaId.toLongOrNull() ?: return@withContext emptyList()
 
@@ -109,7 +111,8 @@ class ChatRepository {
     ): String {
         return withContext(Dispatchers.IO) {
             val pId = persona.id.toLongOrNull() ?: 0L
-
+            // 新增: 动态获取当前用户 ID
+            val currentUserId = com.example.persona.MyApplication.prefs.getUserId()
             // --- A. 异步保存用户的消息到后端 ---
             // 我们不等待它保存成功才发请求，而是“发后即忘”或异步处理，提高速度
             val userMsgObj = ChatMessage(
@@ -179,7 +182,7 @@ class ChatRepository {
                 你现在是 "${persona.name}"。
                 性格：${persona.personality}。
                 
-                任务：请写一条简短的社交网络动态（类似微博/Twitter）。
+                任务：请写一条简短的社交网络动态（类似微博）。
                 要求：
                 1. 必须完全符合你的性格口吻。
                 2. 长度控制在 30-80 字之间。

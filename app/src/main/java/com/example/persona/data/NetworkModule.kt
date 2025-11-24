@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 object NetworkModule {
     private const val BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/"
 
-    private const val BACKEND_BASE_URL = "http://10.0.2.2:8080/"
+    private const val BACKEND_BASE_URL = "https://trinh-deserticolous-unquestionably.ngrok-free.dev"
     private val okHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY

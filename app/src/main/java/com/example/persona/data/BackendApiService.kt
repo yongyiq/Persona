@@ -33,8 +33,18 @@ interface BackendApiService {
         @Path("id") id: Long
     ): ApiResponse<Persona>
     // 获取广场列表
+// 修改：getFeed 现在需要传 userId 了，以便后端判断关注状态
     @GET("api/feed")
-    suspend fun getFeed(): ApiResponse<List<Post>> // 这里的泛型 List<Post> 会自动映射后端的 List<PostVO>
+    suspend fun getFeed(
+        @Query("userId") userId: Long
+    ): ApiResponse<List<Post>>
+
+    // 新增：关注/取消关注
+    @POST("api/follow/toggle")
+    suspend fun toggleFollow(
+        @Query("userId") userId: Long,
+        @Query("personaId") personaId: Long
+    ): ApiResponse<Boolean>
 
     // 发布动态
     @POST("api/feed")
@@ -50,4 +60,5 @@ interface BackendApiService {
     // 同步消息
     @POST("api/chat")
     suspend fun syncMessage(@Body message: ChatMessage): ApiResponse<Boolean>
+
 }

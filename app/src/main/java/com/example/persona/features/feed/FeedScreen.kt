@@ -37,7 +37,7 @@ fun FeedScreen(
         }
 
         items(uiState.posts) { post ->
-            PostCard(post = post, onAvatarClick = { onNavigateToChat(it) })
+            PostCard(post = post, onAvatarClick = { onNavigateToChat(it) },onFollowClick = { viewModel.toggleFollow(it) } )
         }
     }
 

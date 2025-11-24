@@ -81,7 +81,11 @@ fun MainScreen() {
                                     // 避免在栈顶重复创建同一个目的地
                                     launchSingleTop = true
                                     // 恢复状态
-                                    restoreState = true
+                                    if (screen == AppScreen.Feed) {
+                                        restoreState = false
+                                    } else {
+                                        restoreState = true
+                                    }
                                 }
                             }
                         )
@@ -94,7 +98,7 @@ fun MainScreen() {
         NavHost(
             navController = navController,
             // 设置起始目的地
-            startDestination = AppScreen.PersonaCreation.route,
+            startDestination = AppScreen.Feed.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             // “广场” 屏幕的 Composable
@@ -122,6 +126,10 @@ fun MainScreen() {
                 MeScreen(
                     onNavigateToChat = { personaId ->
                         navController.navigate(AppScreen.Chat.createRoute(personaId))
+                    },
+                    onNavigateToCreate = {
+                        // 跳转到创作页
+                        navController.navigate(AppScreen.PersonaCreation.route)
                     }
                 )
             }
@@ -129,10 +137,12 @@ fun MainScreen() {
             composable(AppScreen.PersonaCreation.route) {
                 PersonaCreationScreen(
                     onCreationCompleted = {
-                        // 创作完成后，跳转到广场，并清空返回栈（防止用户按返回键回到创作页）
-                        navController.navigate(AppScreen.Feed.route) {
-                            popUpTo(AppScreen.PersonaCreation.route) { inclusive = true }
-                        }
+                        // 创建成功后，返回上一页 (MeScreen)
+                        navController.popBackStack()
+                    },
+                    onBackClick = {
+                        // 点击左上角返回按钮，也是返回上一页
+                        navController.popBackStack()
                     }
                 )
             }
