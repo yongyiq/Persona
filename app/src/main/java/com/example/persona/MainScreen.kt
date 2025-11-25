@@ -19,8 +19,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.persona.features.auth.LoginScreen
 import com.example.persona.features.chat.ChatScreen
 import com.example.persona.features.me.MeScreen
+import com.example.persona.features.profile.PersonaProfileScreen
 
 // 定义应用程序中的各个屏幕，这是一个密封类，用于表示有限的屏幕集合
 sealed class AppScreen(val route: String, val title: String, val iconResId: Int) {
@@ -36,6 +38,12 @@ sealed class AppScreen(val route: String, val title: String, val iconResId: Int)
     data object Me : AppScreen("me", "我的", android.R.drawable.ic_menu_myplaces)
     // “创作” 屏幕，没有图标
     data object PersonaCreation : AppScreen("creation", "创作", 0)
+    data object Login : AppScreen("login", "登录", 0) // 新增
+
+    data object PersonaProfile : AppScreen("profile", "主页", 0) {
+        const val routeWithArgs = "profile/{personaId}"
+        fun createRoute(personaId: String) = "profile/$personaId"
+    }
 
 }
 
@@ -51,13 +59,20 @@ val bottomNavItems = listOf(
 fun MainScreen() {
     // 创建一个 NavController 来处理导航
     val navController = rememberNavController()
+
+    val isLoggedIn = kotlinx.coroutines.runBlocking {
+        com.example.persona.MyApplication.prefs.getUserId() != 0L // 假设 0L 是未登录
+    }
+
+    val startRoute = if (isLoggedIn) AppScreen.Feed.route else AppScreen.Login.route
     // Scaffold 是一个提供基本应用布局结构的 Composable// 获取当前的导航后退栈条目
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
     Scaffold(
         // 定义底部导航栏
         bottomBar = {
-            if (currentRoute != AppScreen.PersonaCreation.route){
+
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
+            if (currentRoute != AppScreen.PersonaCreation.route && currentRoute != AppScreen.Login.route){
                 NavigationBar {
 
                     // 获取当前的目的地
@@ -98,14 +113,14 @@ fun MainScreen() {
         NavHost(
             navController = navController,
             // 设置起始目的地
-            startDestination = AppScreen.Feed.route,
+            startDestination = startRoute,
             modifier = Modifier.padding(innerPadding)
         ) {
             // “广场” 屏幕的 Composable
             composable(AppScreen.Feed.route) {
                 FeedScreen(
                     onNavigateToChat = { personaId ->
-                        navController.navigate(AppScreen.Chat.createRoute(personaId))
+                        navController.navigate(AppScreen.PersonaProfile.createRoute(personaId))
                     }
                 )
             }
@@ -130,6 +145,12 @@ fun MainScreen() {
                     onNavigateToCreate = {
                         // 跳转到创作页
                         navController.navigate(AppScreen.PersonaCreation.route)
+                    },
+                    onLogout = {
+                        // 退出后跳转到登录页，并清空栈
+                        navController.navigate(AppScreen.Login.route) {
+                            popUpTo(0) { inclusive = true } // 清空所有历史
+                        }
                     }
                 )
             }
@@ -143,6 +164,31 @@ fun MainScreen() {
                     onBackClick = {
                         // 点击左上角返回按钮，也是返回上一页
                         navController.popBackStack()
+                    }
+                )
+            }
+            // 🔥 新增：登录页路由
+            composable(AppScreen.Login.route) {
+                LoginScreen(
+                    onLoginSuccess = {
+                        // 登录成功，跳转到 Feed，并清空返回栈 (不能按返回键回到登录页)
+                        navController.navigate(AppScreen.Feed.route) {
+                            popUpTo(AppScreen.Login.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable(
+                route = AppScreen.PersonaProfile.routeWithArgs,
+                arguments = listOf(navArgument("personaId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val personaId = backStackEntry.arguments?.getString("personaId") ?: ""
+                PersonaProfileScreen(
+                    personaId = personaId,
+                    onBackClick = { navController.popBackStack() },
+                    onNavigateToChat = { id ->
+                        // 点击按钮，跳转到 Chat
+                        navController.navigate(AppScreen.Chat.createRoute(id))
                     }
                 )
             }

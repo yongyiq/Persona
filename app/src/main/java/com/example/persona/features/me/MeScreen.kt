@@ -31,6 +31,7 @@ import com.example.persona.data.Persona
 fun MeScreen(
     onNavigateToChat: (String) -> Unit,
     onNavigateToCreate: () -> Unit,
+    onLogout: () -> Unit, // 新增回调
     viewModel: MeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -138,6 +139,20 @@ fun MeScreen(
                             modifier = Modifier.fillMaxWidth().height(56.dp)
                         ) {
                             Text("进入共生空间 (Evolve Chat)")
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f)) // 顶到底部
+
+                        OutlinedButton(
+                            onClick = {
+                                // 调用 ViewModel 处理退出
+                                viewModel.logout()
+                                onLogout()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text("退出登录")
                         }
                     }
                 } else {

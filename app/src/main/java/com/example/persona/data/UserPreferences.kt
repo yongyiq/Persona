@@ -31,7 +31,7 @@ class UserPreferences(private val context: Context) {
     // 获取 (一次性，挂起函数，方便在 ViewModel 里直接用)
     suspend fun getUserId(): Long {
         // 如果没存过，默认返回 1L (应对毕设演示)
-        return userIdFlow.first() ?: 1L
+        return userIdFlow.first() ?: 0L
     }
 
     // 保存
@@ -53,6 +53,12 @@ class UserPreferences(private val context: Context) {
     suspend fun saveActivePersonaId(id: String) {
         context.dataStore.edit { preferences ->
             preferences[KEY_ACTIVE_PERSONA_ID] = id
+        }
+    }
+    // 退出登录：清除所有数据
+    suspend fun clear() {
+        context.dataStore.edit { preferences ->
+            preferences.clear()
         }
     }
 }

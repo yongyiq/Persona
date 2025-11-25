@@ -17,16 +17,6 @@ import kotlinx.coroutines.runBlocking
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        runBlocking {
-            val currentId = MyApplication.prefs.getUserId()
-            // 这里的逻辑是：如果读取回来是默认值(1L)，或者确实需要重置，这一步保证了ID肯定存在
-            // 也可以写得更严谨：if (userIdFlow.first() == null) saveUserId(1L)
-            // 但由于 getUserId() 有默认值 1L，我们其实主要依赖它。
-            // 为了保险，显式存一次：
-            if (currentId == 0L) { // 假设0是不合法的
-                MyApplication.prefs.saveUserId(1L)
-            }
-        }
         enableEdgeToEdge()
         setContent {
             PersonaTheme {

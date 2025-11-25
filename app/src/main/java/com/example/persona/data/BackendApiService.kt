@@ -60,5 +60,9 @@ interface BackendApiService {
     // 同步消息
     @POST("api/chat")
     suspend fun syncMessage(@Body message: ChatMessage): ApiResponse<Boolean>
+    @POST("api/auth/login")
+    suspend fun login(@Body request: LoginRequest): ApiResponse<User>
 
+    @POST("api/auth/register")
+    suspend fun register(@Body request: LoginRequest): ApiResponse<User>
 }

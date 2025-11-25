@@ -84,4 +84,10 @@ class MeViewModel : ViewModel() {
             _uiState.update { it.copy(activePersonaId = personaId) }
         }
     }
+
+    fun logout() {
+        viewModelScope.launch {
+            MyApplication.prefs.clear() // 清除本地存储
+        }
+    }
 }
