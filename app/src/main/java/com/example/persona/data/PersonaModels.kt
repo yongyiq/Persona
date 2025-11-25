@@ -13,6 +13,8 @@ data class Persona(
     val avatarUrl: String?,      // 暂时用一个本地 drawable 或 URL
     val backgroundStory: String?, // 背景故事
     val personality: String?,     // 鲜明个性 (将作为 LLM 的 System Prompt)
+    val ownerId: Long = 0L,
+    @Transient
     val isMine: Boolean = false  // 标记这是否是用户自己的 Persona
 )
 

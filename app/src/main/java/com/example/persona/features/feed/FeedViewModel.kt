@@ -121,11 +121,18 @@ class FeedViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
+                val currentUserId = MyApplication.prefs.getUserId()
                 val userId = MyApplication.prefs.getUserId()
                 val response = NetworkModule.backendService.getFeed(userId)
 
                 if (response.isSuccess() && response.data != null) {
-                    _uiState.update { it.copy(posts = response.data, isLoading = false) }
+                    val processedPosts = response.data.map { post ->
+                        val author = post.authorPersona.copy(
+                            isMine = (post.authorPersona.ownerId == currentUserId)
+                        )
+                        post.copy(authorPersona = author)
+                    }
+                    _uiState.update { it.copy(posts = processedPosts, isLoading = false) }
                 } else {
                     _uiState.update { it.copy(isLoading = false) }
                 }

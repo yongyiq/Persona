@@ -2,6 +2,7 @@ package com.example.persona.features.creation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.persona.MyApplication
 import com.example.persona.data.ChatRepository
 import com.example.persona.data.MockData
 import com.example.persona.data.NetworkModule
@@ -71,6 +72,8 @@ class PersonaCreationViewModel : ViewModel() {
         if (state.name.isBlank()) return
 
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val currentUserId = MyApplication.prefs.getUserId()
             // 1. 创建最终的 Persona 对象
             val newPersona = Persona(
                 id = "",
@@ -78,6 +81,7 @@ class PersonaCreationViewModel : ViewModel() {
                 avatarUrl = "https://api.dicebear.com/9.x/bottts/png?seed=${state.name}", // 依然为空，或者你可以给个默认头像
                 backgroundStory = state.backgroundStory,
                 personality = state.personality,
+                ownerId = currentUserId,
                 isMine = true
             )
 

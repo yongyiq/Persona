@@ -2,6 +2,7 @@ package com.example.persona.features.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.persona.MyApplication
 import com.example.persona.data.ChatRepository
 import com.example.persona.data.MockData
 import com.example.persona.data.Persona
@@ -25,7 +26,13 @@ class PersonaProfileViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
+            val currentUserId = MyApplication.prefs.getUserId()
             var target = repository.getPersonaById(personaId)
+
+            // 动态判断 isMine
+            if (target != null) {
+                target = target.copy(isMine = (target.ownerId == currentUserId))
+            }
 
             if (target == null) {
                 target = MockData.samplePosts.find { it.authorPersona.id == personaId }?.authorPersona
