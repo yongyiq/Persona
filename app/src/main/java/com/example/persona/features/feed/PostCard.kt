@@ -1,11 +1,15 @@
 package com.example.persona.features.feed
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -26,6 +30,14 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.persona.data.MockData
 import com.example.persona.data.Post
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 // 显示单个帖子的 Composable 函数
 @Composable
@@ -34,6 +46,34 @@ fun PostCard(
     onAvatarClick: (String) -> Unit,
     onFollowClick: (Post) -> Unit
 ) {
+    // 1. 定义状态：控制大图是否显示
+    var showImageDialog by remember { mutableStateOf(false) }
+    // 2. 全屏大图弹窗 (Lightbox)
+    if (showImageDialog && !post.imageUrl.isNullOrBlank()) {
+        Dialog(
+            onDismissRequest = { showImageDialog = false },
+            // 设置为全屏模式，不限制宽度
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black) // 黑色背景
+                    .clickable { showImageDialog = false }, // 点击任意处关闭
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(post.imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Full Screen Image",
+                    modifier = Modifier.fillMaxWidth(), // 宽度撑满
+                    contentScale = ContentScale.Fit // 保持比例完整显示
+                )
+            }
+        }
+    }
     // 使用 Card 作为帖子的容器
     Card(
         modifier = Modifier
@@ -92,13 +132,34 @@ fun PostCard(
                 }
             }
             // 添加一个 16dp 高的垂直间距
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 显示帖子内容
-            Text(
-                text = post.content,
-                style = MaterialTheme.typography.bodyLarge // 使用 Material Design 的正文样式
-            )
+            // 2. 帖子文字内容
+            if (post.content.isNotBlank()) {
+                Text(
+                    text = post.content,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            // 3. 🔥 新增：帖子配图渲染
+            if (!post.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(post.imageUrl)
+                        .crossfade(true)
+                        .placeholder(android.R.drawable.ic_menu_gallery) // 加载中占位图
+                        .error(android.R.drawable.ic_delete) // 加载失败占位图
+                        .build(),
+                    contentDescription = "Post Image",
+                    contentScale = ContentScale.Crop, // 裁剪模式：填满容器，多余裁剪
+                    modifier = Modifier
+                        .fillMaxWidth() // 宽度撑满
+                        .heightIn(max = 200.dp) // 🔥 关键：限制最大高度，防止长图占满屏幕
+                        .clip(RoundedCornerShape(12.dp)) // 给图片加个圆角，更好看
+                        .clickable { showImageDialog = true } // 点击弹出大图
+                )
+            }
         }
     }
 }

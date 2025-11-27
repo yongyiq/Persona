@@ -20,6 +20,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.persona.features.auth.LoginScreen
+import com.example.persona.features.chat.ChatListScreen
 import com.example.persona.features.chat.ChatScreen
 import com.example.persona.features.me.MeScreen
 import com.example.persona.features.profile.PersonaProfileScreen
@@ -124,18 +125,27 @@ fun MainScreen() {
                     }
                 )
             }
+            composable(AppScreen.Chat.route) {
+                ChatListScreen(
+                    onNavigateToChatDetail = { personaId ->
+                        // 点击列表项，跳转到具体的聊天界面 (带参数)
+                        navController.navigate(AppScreen.Chat.createRoute(personaId))
+                    }
+                )
+            }
+            // 这就是具体的聊天窗口
             composable(
                 route = AppScreen.Chat.routeWithArgs,
-                arguments = listOf(navArgument("personaId"){type = NavType.StringType})
-            ) {
-                backStackEntry ->
+                arguments = listOf(navArgument("personaId") { type = NavType.StringType })
+            ) { backStackEntry ->
                 val personaId = backStackEntry.arguments?.getString("personaId")
                 ChatScreen(personaId = personaId)
             }
-            // “对话” 屏幕的 Composable
-            composable(AppScreen.Chat.route) {
-                ChatScreen(personaId = null)
-            }
+
+//            // “对话” 屏幕的 Composable
+//            composable(AppScreen.Chat.route) {
+//                ChatScreen(personaId = null)
+//            }
             // “我的” 屏幕的 Composable
             composable(AppScreen.Me.route) {
                 MeScreen(

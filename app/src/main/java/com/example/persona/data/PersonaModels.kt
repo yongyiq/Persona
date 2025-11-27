@@ -38,9 +38,13 @@ data class ChatMessage(
     val text: String,
     val userId: Long? = null,    // 新增：对应后端 userId
     val personaId: Long? = null, // 新增：对应后端 personaId
-    val isFromUser: Boolean = false
+    val isFromUser: Boolean = false,
+    val isStreaming: Boolean = false,
+    val type: Int = 0
 ) {
     // 辅助属性，兼容旧代码的 author 逻辑
     val author: String
         get() = if (isFromUser) "me" else (personaId?.toString() ?: "ai")
+    val isImage: Boolean
+        get() = type == 1
 }

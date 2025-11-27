@@ -1,8 +1,11 @@
 package com.example.persona.data
 
+import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 // 为了发布方便，定义一个简单的请求对象（因为发布时我们只传 personaId，不传整个对象）
@@ -65,4 +68,21 @@ interface BackendApiService {
 
     @POST("api/auth/register")
     suspend fun register(@Body request: LoginRequest): ApiResponse<User>
+
+    // 请求生成图片
+    @POST("api/chat/image")
+    suspend fun generateImage(@Body request: ChatMessage): ApiResponse<ChatMessage>
+
+    // 上传图片接口
+    @POST("api/upload")
+    @Multipart // 关键注解
+    suspend fun uploadImage(
+        @Part file: MultipartBody.Part
+    ): ApiResponse<String> // 返回图片 URL
+
+    // 获取会话列表
+    @GET("api/chat/conversations")
+    suspend fun getConversations(
+        @Query("userId") userId: Long
+    ): ApiResponse<List<Conversation>>
 }

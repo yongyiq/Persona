@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -15,9 +16,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.persona.data.ChatMessage
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @Composable
 fun MessageBubble(msg: ChatMessage) {
@@ -50,13 +57,40 @@ fun MessageBubble(msg: ChatMessage) {
                 // 限制气泡最大宽度，不要占满整行，稍微留点白
                 .widthIn(max = 300.dp)
         ) {
-            // 4. 消息文本
-            Text(
-                text = msg.text,
-                // 文本颜色：深色背景用浅色字，浅色背景用深色字
-                color = if (isMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
-                style = MaterialTheme.typography.bodyLarge
-            )
+            if (msg.isImage) {
+                // --- 渲染图片 ---
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(msg.text) // 这里的 text 是 URL
+                        .crossfade(true)
+                        .placeholder(android.R.drawable.ic_menu_gallery)
+                        .build(),
+                    contentDescription = "AI Generated Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f) // 正方形
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                // 4. 消息文本
+                if (msg.isStreaming) {
+                    Text(
+                        text = msg.text,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer, // AI 气泡文字颜色
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                } else {
+                    // 使用 Markdown 渲染
+                    MarkdownText(
+                        markdown = msg.text,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = if (isMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        // 可选：如果 MarkdownText 支持 isTextSelectable 等参数也可配置
+                    )
+                }
+            }
         }
     }
 }

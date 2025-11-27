@@ -5,6 +5,9 @@ import kotlinx.coroutines.withContext
 import com.example.persona.BuildConfig
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 class ChatRepository {
     private val apiService = NetworkModule.apiService
@@ -175,6 +178,90 @@ class ChatRepository {
             aiContent
         }
     }
+
+    fun sendMessageStream(
+        persona: Persona,
+        messageHistory: List<ChatMessage>,
+        newUserMessage: String,
+        imageToSend: String? = null
+    ): Flow<String> = flow {
+        // 1. 决定模型：如果有图，必须用 VL 模型
+        val modelName = if (imageToSend != null) "qwen-vl-max" else "qwen-plus"
+
+        // 2. 构造当前消息的 content
+        val currentContent: Any = if (imageToSend != null) {
+            // VL 模型的格式：[{"image": "http..."}, {"text": "..."}]
+            listOf(
+                ContentItem(image = imageToSend),
+                ContentItem(text = newUserMessage)
+            )
+        } else {
+            newUserMessage // 没图就还是传纯文本
+        }
+        val systemPrompt = if (persona.isMine) {
+            // 共生模式 Prompt ... (复制之前的代码)
+            """
+                你现在是用户创造的数字人格 "${persona.name}"...
+                """.trimIndent()
+        } else {
+            // 普通模式 Prompt ...
+            """
+                你现在是 ${persona.name}...
+                """.trimIndent()
+        }
+        val apiMessages = mutableListOf<ApiMessage>()
+        apiMessages.add(ApiMessage(role = "system", content = systemPrompt))
+
+        // 转换历史记录格式
+        messageHistory.takeLast(10).forEach { chatMsg ->
+            val role = if (chatMsg.isFromUser) "user" else "assistant"
+            apiMessages.add(ApiMessage(role = role, content = chatMsg.text))
+        }
+        apiMessages.add(ApiMessage(role = "user", content = currentContent.toString()))
+
+        val request = ChatRequest(
+            model = modelName,
+            messages = apiMessages,
+            stream = true
+        )
+
+        try {
+            // 2. 发起请求
+            val responseBody = apiService.streamChatResponse("Bearer ${BuildConfig.QWEN_API_KEY}", request)
+
+            // 3. 解析流 (SSE 格式)
+            val source = responseBody.source()
+            val buffer = source.buffer
+
+            while (!source.exhausted()) {
+                // 读取一行
+                val line = source.readUtf8LineStrict()
+
+                // SSE 格式通常以 "data: " 开头
+                if (line.startsWith("data: ")) {
+                    val json = line.removePrefix("data: ").trim()
+
+                    // 结束标志
+                    if (json == "[DONE]") break
+
+                    try {
+                        // 解析 JSON
+                        val chunk = Gson().fromJson(json, StreamChatResponse::class.java)
+                        val content = chunk.choices.firstOrNull()?.delta?.content
+
+                        if (!content.isNullOrEmpty()) {
+                            emit(content) // 🌊 发射增量文本
+                        }
+                    } catch (e: Exception) {
+                        // 解析单行失败，忽略，继续下一行
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit("\n[网络错误: ${e.message}]")
+        }
+    }.flowOn(Dispatchers.IO)
     // 新增：让 AI 基于人设生成一条社交动态
     suspend fun generatePostContent(persona: Persona): String {
         return withContext(Dispatchers.IO) {
@@ -201,6 +288,16 @@ class ChatRepository {
                 e.printStackTrace()
                 ""
             }
+        }
+    }
+    // 封装一下，方便 ViewModel 调用
+    suspend fun syncToBackend(msg: ChatMessage) {
+        // 后端接口可能不需要 id (如果是自增)，或者需要转换一下格式
+        try {
+            backendService.syncMessage(msg)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // 可以在这里处理重试逻辑
         }
     }
 }

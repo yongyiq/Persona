@@ -76,4 +76,6 @@ dependencies {
     implementation(libs.retrofit.gson)
     implementation(libs.okhttp.logging)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.compose.markdown)
+    implementation(libs.androidx.material.icons.extended)
 }

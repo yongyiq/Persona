@@ -49,7 +49,10 @@ fun FeedScreen(
             onContentChange = { viewModel.onContentChanged(it) },
             onAiGenerate = { viewModel.onAiGenerateClick() },
             onPublish = { viewModel.publishPost() },
-            isGenerating = uiState.isGenerating
+            isGenerating = uiState.isGenerating,
+            // 🔥 新增：传递图片选择相关的参数
+            selectedImageUri = uiState.selectedImageUri,
+            onImageSelect = { uri -> viewModel.onImageSelected(uri) }
         )
     }
 }

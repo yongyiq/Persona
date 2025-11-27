@@ -1,5 +1,8 @@
 package com.example.persona.features.feed
 
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.persona.MyApplication
@@ -9,12 +12,17 @@ import com.example.persona.data.NetworkModule
 import com.example.persona.data.Persona
 import com.example.persona.data.Post
 import com.example.persona.data.PostRequest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 // 定义 Feed 屏幕的 UI 状态
 data class FeedUiState(
@@ -25,11 +33,12 @@ data class FeedUiState(
     // --- 发布相关状态 ---
     val isSheetOpen: Boolean = false, // 弹窗是否打开
     val publishContent: String = "",  // 输入框里的内容
-    val isGenerating: Boolean = false // AI 是否正在写
+    val isGenerating: Boolean = false, // AI 是否正在写
+    val selectedImageUri: Uri? = null // 新增：选中的图片 URI
 )
 
 // Feed 屏幕的 ViewModel
-class FeedViewModel : ViewModel() {
+class FeedViewModel(application: Application) : AndroidViewModel(application) {
     // 可变的 UI 状态，使用 MutableStateFlow
     private val _uiState = MutableStateFlow(FeedUiState())
     // 将可变的 UI 状态暴露为不可变的 StateFlow
@@ -41,16 +50,19 @@ class FeedViewModel : ViewModel() {
         loadFeed()
         observeActivePersona() // 初始化时加载我的信息
     }
+
+    // 1. 用户选图回调
+    fun onImageSelected(uri: Uri?) {
+        _uiState.update { it.copy(selectedImageUri = uri) }
+    }
     // 监听 Active Persona 的变化
     private fun observeActivePersona() {
         viewModelScope.launch {
             // 监听 DataStore 中的 activePersonaIdFlow
             MyApplication.prefs.activePersonaIdFlow.collect { activeId ->
-                if (activeId != null) {
-                    // 如果 ID 变了，就去后端拉取这个 Persona 的详情
+                if (!activeId.isNullOrBlank()) {
                     fetchPersonaDetails(activeId)
                 } else {
-                    // 如果没 ID，尝试初始化一个 (fallback)
                     loadDefaultPersona()
                 }
             }
@@ -147,17 +159,27 @@ class FeedViewModel : ViewModel() {
     fun publishPost() {
         val content = _uiState.value.publishContent
         val persona = _uiState.value.myPersona ?: return
-        if (content.isBlank()) return
+        val imageUri = _uiState.value.selectedImageUri
+        if (content.isBlank() && imageUri == null) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, isSheetOpen = false) } // 先关弹窗
-
-            val request = PostRequest(personaId = persona.id, content = content)
+            var uploadedImageUrl: String? = null
+            // A. 如果有图，先上传
+            if (imageUri != null) {
+                uploadedImageUrl = uploadImage(imageUri)
+                if (uploadedImageUrl == null) {
+                    // 上传失败处理 (Toast 提示等，这里简化为直接返回)
+                    _uiState.update { it.copy(isLoading = false) }
+                    return@launch
+                }
+            }
+            val request = PostRequest(personaId = persona.id, content = content, imageUrl = uploadedImageUrl)
             val response = NetworkModule.backendService.publishPost(request)
 
             if (response.isSuccess()) {
                 loadFeed() // 刷新列表
-                _uiState.update { it.copy(publishContent = "") } // 清空缓存
+                _uiState.update { it.copy(publishContent = "", selectedImageUri = null) } // 清空缓存
             }
             _uiState.update { it.copy(isLoading = false) }
         }
@@ -184,6 +206,26 @@ class FeedViewModel : ViewModel() {
             } catch (e: Exception) {
                 // 如果失败，可以在这里回滚 UI (可选)
                 e.printStackTrace()
+            }
+        }
+    }
+    // 辅助：上传图片
+    private suspend fun uploadImage(uri: Uri): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>().applicationContext
+                val inputStream = context.contentResolver.openInputStream(uri) ?: return@withContext null
+                val bytes = inputStream.readBytes()
+                inputStream.close()
+
+                val requestFile = bytes.toRequestBody("image/*".toMediaTypeOrNull())
+                val body = MultipartBody.Part.createFormData("file", "upload.jpg", requestFile)
+
+                val response = NetworkModule.backendService.uploadImage(body)
+                if (response.isSuccess()) response.data else null
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
             }
         }
     }
