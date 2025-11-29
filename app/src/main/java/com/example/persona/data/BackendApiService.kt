@@ -49,6 +49,11 @@ interface BackendApiService {
         @Query("personaId") personaId: Long
     ): ApiResponse<Boolean>
 
+    @GET("api/follow/list")
+    suspend fun getFollowList(
+        @Query("userId") userId: Long
+    ): ApiResponse<List<Persona>>
+
     // 发布动态
     @POST("api/feed")
     suspend fun publishPost(@Body post: PostRequest): ApiResponse<Boolean>

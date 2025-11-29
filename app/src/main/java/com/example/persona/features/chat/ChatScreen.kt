@@ -1,6 +1,10 @@
 package com.example.persona.features.chat
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,8 +18,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,6 +70,12 @@ fun ChatScreen(
             viewModel.loadChatByPersonaId(personaId)
         }
     }
+
+    // 1. 🔥 新增：图片选择器启动器
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> viewModel.onImageSelected(uri) }
+    )
     Scaffold(
         // 1. 顶部标题栏
         topBar = {
@@ -96,7 +109,16 @@ fun ChatScreen(
                 text = uiState.inputText,
                 onTextChanged = { viewModel.onInputTextChange(it) },
                 onSendClick = { viewModel.sendMessage() },
-                isTyping = uiState.isTyping
+                isTyping = uiState.isTyping,
+                // 🔥 新增：传入图片相关参数
+                selectedImageUri = viewModel.selectedImageUri.value, // 需要在 ViewModel 中定义这个 State
+                onImageSelect = {
+                    // 启动相册
+                    photoPickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                },
+                onClearImage = { viewModel.onImageSelected(null) } // 清除选中的图片
             )
         }
     ) { innerPadding ->
@@ -126,39 +148,90 @@ fun ChatInputArea(
     text: String,
     onTextChanged: (String) -> Unit,
     onSendClick: () -> Unit,
+    selectedImageUri: android.net.Uri? = null,
+    onImageSelect: () -> Unit = {},
+    onClearImage: () -> Unit = {},
     isTyping: Boolean
 ) {
-    Row(
+    // 外层改为 Column，以便在输入框上方显示图片预览
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        // 输入框
-        OutlinedTextField(
-            value = text,
-            onValueChange = onTextChanged,
-            placeholder = {
-                if (isTyping) Text("对方正在输入...") else Text("输入消息...")
-            },
-            modifier = Modifier.weight(1f), // 占据剩余宽度
-            maxLines = 3,
-            enabled = !isTyping // AI回复时禁止输入(防止乱序，可选)
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // 发送按钮
-        IconButton(
-            onClick = onSendClick,
-            enabled = text.isNotBlank() && !isTyping
+        // 🔥 1. 图片预览区 (如果有选图才显示)
+        if (selectedImageUri != null) {
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(100.dp) // 预览图大小
+            ) {
+                AsyncImage(
+                    model = selectedImageUri,
+                    contentDescription = "Selected Image",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                // 删除图片的按钮
+                IconButton(
+                    onClick = onClearImage,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Remove Image",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Send, // 注意：新版 Compose 这里可能有变化
-                contentDescription = "Send",
-                tint = MaterialTheme.colorScheme.primary
+            // 🔥 新增：图片选择按钮 (+)
+            IconButton(
+                onClick = onImageSelect,
+                enabled = !isTyping
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AddCircle,
+                    contentDescription = "Add Image",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            // 输入框
+            OutlinedTextField(
+                value = text,
+                onValueChange = onTextChanged,
+                placeholder = {
+                    if (isTyping) Text("对方正在输入...") else Text("输入消息...")
+                },
+                modifier = Modifier.weight(1f), // 占据剩余宽度
+                maxLines = 3,
+                enabled = !isTyping // AI回复时禁止输入(防止乱序，可选)
             )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // 发送按钮
+            IconButton(
+                onClick = onSendClick,
+                // 逻辑优化：有文字 OR 有图片 都可以发送
+                enabled = (text.isNotBlank() || selectedImageUri != null) && !isTyping
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Send, // 注意：新版 Compose 这里可能有变化
+                    contentDescription = "Send",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }

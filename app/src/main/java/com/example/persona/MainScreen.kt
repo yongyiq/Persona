@@ -20,8 +20,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.persona.features.auth.LoginScreen
+import com.example.persona.features.auth.RegisterScreen
 import com.example.persona.features.chat.ChatListScreen
 import com.example.persona.features.chat.ChatScreen
+import com.example.persona.features.follow.FollowListScreen
 import com.example.persona.features.me.MeScreen
 import com.example.persona.features.profile.PersonaProfileScreen
 
@@ -29,6 +31,7 @@ import com.example.persona.features.profile.PersonaProfileScreen
 sealed class AppScreen(val route: String, val title: String, val iconResId: Int) {
     // “广场” 屏幕
     data object Feed : AppScreen("feed", "广场", android.R.drawable.ic_menu_search)
+    data object FollowList : AppScreen("follow_list", "关注", 0)
     // “对话” 屏幕
     data object Chat : AppScreen("chat", "对话", android.R.drawable.ic_dialog_email) {
         const val routeWithArgs = "chat/{personaId}"
@@ -40,6 +43,8 @@ sealed class AppScreen(val route: String, val title: String, val iconResId: Int)
     // “创作” 屏幕，没有图标
     data object PersonaCreation : AppScreen("creation", "创作", 0)
     data object Login : AppScreen("login", "登录", 0) // 新增
+
+    data object Register : AppScreen("register", "注册", 0) // 🔥 新增
 
     data object PersonaProfile : AppScreen("profile", "主页", 0) {
         const val routeWithArgs = "profile/{personaId}"
@@ -130,6 +135,10 @@ fun MainScreen() {
                     onNavigateToChatDetail = { personaId ->
                         // 点击列表项，跳转到具体的聊天界面 (带参数)
                         navController.navigate(AppScreen.Chat.createRoute(personaId))
+                    },
+                    // 🔥 传入跳转逻辑
+                    onNavigateToFollowList = {
+                        navController.navigate(AppScreen.FollowList.route)
                     }
                 )
             }
@@ -140,6 +149,16 @@ fun MainScreen() {
             ) { backStackEntry ->
                 val personaId = backStackEntry.arguments?.getString("personaId")
                 ChatScreen(personaId = personaId)
+            }
+
+            composable(AppScreen.FollowList.route) {
+                FollowListScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onPersonaClick = { personaId ->
+                        // 点击关注的人，跳转到 TA 的主页
+                        navController.navigate(AppScreen.PersonaProfile.createRoute(personaId))
+                    }
+                )
             }
 
 //            // “对话” 屏幕的 Composable
@@ -185,6 +204,25 @@ fun MainScreen() {
                         navController.navigate(AppScreen.Feed.route) {
                             popUpTo(AppScreen.Login.route) { inclusive = true }
                         }
+                    },
+                    onNavigateToRegister = {
+                        // 跳转到注册页
+                        navController.navigate(AppScreen.Register.route)
+                    }
+                )
+            }
+            composable(AppScreen.Register.route) {
+                RegisterScreen(
+                    onRegisterSuccess = {
+                        // 注册成功 == 登录成功，直接进 Feed
+                        // 并清空回退栈，防止按返回键回到注册/登录页
+                        navController.navigate(AppScreen.Feed.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onBackToLogin = {
+                        // 返回登录页
+                        navController.popBackStack()
                     }
                 )
             }

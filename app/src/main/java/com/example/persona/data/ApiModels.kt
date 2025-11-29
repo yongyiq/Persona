@@ -8,7 +8,7 @@ data class ChatRequest(
 
 data class ApiMessage(
     val role: String,
-    val content: String,
+    val content: Any,
 )
 
 data class ContentItem(
@@ -21,7 +21,7 @@ data class ChatResponse(
 )
 
 data class Choice(
-    val message: ApiMessage
+    val message: ApiMessage,
 )
 
 data class StreamChatResponse(

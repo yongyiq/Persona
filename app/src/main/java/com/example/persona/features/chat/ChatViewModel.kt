@@ -1,5 +1,7 @@
 package com.example.persona.features.chat
 
+import android.net.Uri
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.persona.data.ChatMessage
@@ -20,6 +22,7 @@ data class ChatUiState(
     val message: List<ChatMessage> = emptyList(),
     val inputText: String = "",
     val isTyping: Boolean = false
+
 )
 
 class ChatViewModel : ViewModel() {
@@ -29,8 +32,15 @@ class ChatViewModel : ViewModel() {
     private val _uiStates = MutableStateFlow(ChatUiState())
     val uiStates: StateFlow<ChatUiState> = _uiStates.asStateFlow()
 
+    // 新增状态
+    val selectedImageUri = mutableStateOf<Uri?>(null)
+
     init {
         loadChatWith(MockData.samplePosts.first().authorPersona)
+    }
+
+    fun onImageSelected(uri: Uri?) {
+        selectedImageUri.value = uri
     }
 
     fun loadChatWith(persona: Persona) {
@@ -83,10 +93,18 @@ class ChatViewModel : ViewModel() {
         viewModelScope.launch {
             val targetPersonaId = target.id.toLongOrNull()
             val currentUserId = com.example.persona.MyApplication.prefs.getUserId() // 暂时硬编码为 1，对应数据库里的 admin 用户
-
+            // 1. 如果有选图，先上传
+            var uploadedImageUrl: String? = null
+            if (selectedImageUri.value != null) {
+                // 上传图片拿到 URL
+                uploadedImageUrl = repository.uploadImage(selectedImageUri.value!!)
+                // 清空选中状态
+                selectedImageUri.value = null
+            }
+            val displayContent = if (uploadedImageUrl != null) "$textToSend\n![image]($uploadedImageUrl)" else textToSend
             val userMsg = ChatMessage(
                 id = UUID.randomUUID().toString(), // 生成一个临时 ID 给 UI 用
-                text = textToSend,
+                text = displayContent,
                 userId = currentUserId,   // 谁发的
                 personaId = targetPersonaId, // 发给谁
                 isFromUser = true,         // 关键标志：是我发的
@@ -197,7 +215,8 @@ class ChatViewModel : ViewModel() {
                 repository.sendMessageStream(
                     persona = target,
                     messageHistory = currentState.message,
-                    newUserMessage = textToSend
+                    newUserMessage = textToSend,
+                    imageToSend = uploadedImageUrl
                 ).collect { delta ->
                     // 收到一个字，就拼接到总内容上
                     fullResponse += delta

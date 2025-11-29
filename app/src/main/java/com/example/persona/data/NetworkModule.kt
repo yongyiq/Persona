@@ -12,7 +12,7 @@ object NetworkModule {
     private const val BACKEND_BASE_URL = "https://trinh-deserticolous-unquestionably.ngrok-free.dev"
     private val okHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = HttpLoggingInterceptor.Level.HEADERS
         }
 
         OkHttpClient.Builder()

@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +28,7 @@ import com.example.persona.data.Conversation
 @Composable
 fun ChatListScreen(
     onNavigateToChatDetail: (String) -> Unit, // 点击跳转到具体聊天
+    onNavigateToFollowList: () -> Unit, // 🔥 新增回调
     viewModel: ChatListViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -39,6 +42,18 @@ fun ChatListScreen(
         topBar = {
             // 简单的标题栏
             CenterAlignedTopAppBar(title = { Text("消息") })
+            CenterAlignedTopAppBar(
+                title = { Text("消息") },
+                // 🔥 新增：右上角入口
+                actions = {
+                    IconButton(onClick = onNavigateToFollowList) {
+                        Icon(
+                            imageVector = Icons.Default.People, // 使用 People 或其他合适的图标
+                            contentDescription = "Follow List"
+                        )
+                    }
+                }
+            )
         }
     ) { innerPadding ->
         if (uiState.isLoading && uiState.conversations.isEmpty()) {

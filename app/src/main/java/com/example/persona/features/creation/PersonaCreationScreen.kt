@@ -1,18 +1,30 @@
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.persona.features.creation.PersonaCreationViewModel
 
 @OptIn(ExperimentalMaterial3Api::class) // TopAppBar 需要这个注解
@@ -23,6 +35,18 @@ fun PersonaCreationScreen(
     onBackClick: () -> Unit // <--- 1. 新增回调
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // 1. 图片选择器
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> viewModel.onAvatarSelected(uri) }
+    )
+    // 🔥 核心修复：监听成功状态
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            onCreationCompleted() // 只有当 success 变成 true 时，才执行跳转
+        }
+    }
 
     // 2. 使用 Scaffold 添加顶部栏
     Scaffold(
@@ -49,6 +73,41 @@ fun PersonaCreationScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    .clickable {
+                        // 点击触发选图
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }
+            ){
+                // 显示逻辑：
+                // 1. 如果用户选了图 (uiState.avatarUri)，显示选中的图
+                // 2. 如果没选但输入了名字 (uiState.name)，显示 DiceBear 预览
+                // 3. 否则显示默认占位符
+                val model = if (uiState.avatarUri != null) {
+                    uiState.avatarUri
+                } else if (uiState.name.isNotBlank()) {
+                    "https://api.dicebear.com/9.x/bottts/png?seed=${uiState.name}"
+                } else {
+                    android.R.drawable.ic_menu_camera // 或者其他占位图标
+                }
+
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(model)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Avatar",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
             // (移除了原来的 "定义你的 AI 化身" 标题，因为 TopBar 有了)
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -117,8 +176,6 @@ fun PersonaCreationScreen(
                 onClick = {
                     viewModel.onCompleteCreation()
                     // 注意：这里最好改为监听 uiState.isSaveSuccess 再调用
-                    // 但为了简单，我们在点击后稍作延迟或直接调用
-                    onCreationCompleted()
                 },
                 enabled = uiState.name.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().height(50.dp),

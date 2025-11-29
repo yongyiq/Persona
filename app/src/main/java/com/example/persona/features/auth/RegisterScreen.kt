@@ -13,17 +13,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit,
-    viewModel: LoginViewModel = viewModel()
+fun RegisterScreen(
+    onRegisterSuccess: () -> Unit,
+    onBackToLogin: () -> Unit,
+    viewModel: RegisterViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // 监听登录成功状态
-    LaunchedEffect(uiState.isLoginSuccess) {
-        if (uiState.isLoginSuccess) {
-            onLoginSuccess()
+    // 监听注册成功事件
+    LaunchedEffect(uiState.isRegisterSuccess) {
+        if (uiState.isRegisterSuccess) {
+            onRegisterSuccess()
         }
     }
 
@@ -32,28 +32,41 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Persona", style = MaterialTheme.typography.displayMedium)
-        Text("登录你的数字世界", style = MaterialTheme.typography.bodyMedium)
+        Text("创建账号", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(32.dp))
 
-        Spacer(modifier = Modifier.height(48.dp))
-
+        // 用户名
         OutlinedTextField(
             value = uiState.username,
             onValueChange = { viewModel.onUsernameChange(it) },
             label = { Text("用户名") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
         )
-
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 密码
         OutlinedTextField(
             value = uiState.password,
             onValueChange = { viewModel.onPasswordChange(it) },
             label = { Text("密码") },
-            visualTransformation = PasswordVisualTransformation(), // 隐藏密码
-            modifier = Modifier.fillMaxWidth()
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 确认密码
+        OutlinedTextField(
+            value = uiState.confirmPassword,
+            onValueChange = { viewModel.onConfirmPasswordChange(it) },
+            label = { Text("确认密码") },
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
         )
 
+        // 错误提示
         if (uiState.error != null) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(uiState.error!!, color = MaterialTheme.colorScheme.error)
@@ -61,24 +74,24 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // 注册按钮
         Button(
-            onClick = { viewModel.login() },
+            onClick = { viewModel.register() },
             enabled = !uiState.isLoading,
             modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
             if (uiState.isLoading) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
             } else {
-                Text("登 录")
+                Text("立即注册")
             }
         }
-        
-        // 这里可以加个 TextButton 跳转注册
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 🔥 新增：跳转注册页
-        TextButton(onClick = onNavigateToRegister) { // 需要给 LoginScreen 增加这个参数
-            Text("没有账号？去注册")
+        // 返回登录按钮
+        TextButton(onClick = onBackToLogin) {
+            Text("已有账号？去登录")
         }
     }
 }

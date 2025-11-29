@@ -1,5 +1,6 @@
 package com.example.persona.features.creation
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.persona.MyApplication
@@ -18,7 +19,9 @@ data class PersonaCreationUiState(
     val name: String = "",
     val backgroundStory: String = "",
     val personality: String = "",
+    val avatarUri: Uri? = null,
     val isLoading: Boolean = false,
+    val isSuccess: Boolean = false,
     val errorMsg: String? = null
 )
 
@@ -37,6 +40,11 @@ class PersonaCreationViewModel : ViewModel() {
     fun onNameChanged(v: String) { _uiState.update { it.copy(name = v) } }
     fun onStoryChanged(v: String) { _uiState.update { it.copy(backgroundStory = v) } }
     fun onPersonalityChanged(v: String) { _uiState.update { it.copy(personality = v) } }
+
+    // 2. 新增：处理头像选择
+    fun onAvatarSelected(uri: Uri?) {
+        _uiState.update { it.copy(avatarUri = uri) }
+    }
 
     // --- 核心：点击 AI 生成 ---
     fun onGeneratePersonaClicked() {
@@ -73,12 +81,24 @@ class PersonaCreationViewModel : ViewModel() {
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+
+            var finalAvatarUrl = "https://api.dicebear.com/9.x/bottts/png?seed=${state.name}" // 默认用 DiceBear
+            // 如果用户选了图，先上传
+            if (state.avatarUri != null) {
+                val uploadedUrl = repository.uploadImage(state.avatarUri)
+                if (uploadedUrl != null) {
+                    finalAvatarUrl = uploadedUrl
+                } else {
+                    // 上传失败处理：可以选择报错，或者降级使用默认头像
+                    // 这里我们选择不做中断，继续使用默认头像，但可以给个提示（可选）
+                }
+            }
             val currentUserId = MyApplication.prefs.getUserId()
             // 1. 创建最终的 Persona 对象
             val newPersona = Persona(
                 id = "",
                 name = state.name,
-                avatarUrl = "https://api.dicebear.com/9.x/bottts/png?seed=${state.name}", // 依然为空，或者你可以给个默认头像
+                avatarUrl = finalAvatarUrl, // 依然为空，或者你可以给个默认头像
                 backgroundStory = state.backgroundStory,
                 personality = state.personality,
                 ownerId = currentUserId,
@@ -93,7 +113,7 @@ class PersonaCreationViewModel : ViewModel() {
                     // 保存成功！
                     // 这里通常不需要手动更新本地 MockData 了
                     // 因为跳转回主页后，MeScreen 会重新拉取最新的列表
-                    _uiState.update { it.copy(isLoading = false) }
+                    _uiState.update { it.copy(isLoading = false, isSuccess = true) }
 
                     // 触发跳转逻辑 (这一步通常通过 Effect 或回调在 UI 层处理，这里简化处理)
                     // 实际代码中，你可以设置一个标志位让 UI 监听

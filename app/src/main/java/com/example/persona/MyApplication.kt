@@ -9,13 +9,13 @@ class MyApplication : Application() {
     companion object {
         // 全局静态单例，方便直接访问
         lateinit var prefs: UserPreferences
-        lateinit var context: Context
+        lateinit var instance: MyApplication
     }
 
     override fun onCreate() {
         super.onCreate()
         // 初始化 DataStore
         prefs = UserPreferences(this)
-        context = this
+        instance = this
     }
 }

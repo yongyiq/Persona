@@ -1,13 +1,18 @@
 package com.example.persona.data
 
+import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.example.persona.BuildConfig
+import com.example.persona.MyApplication
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class ChatRepository {
     private val apiService = NetworkModule.apiService
@@ -80,7 +85,8 @@ class ChatRepository {
             )
             try {
                 val response = apiService.getChatResponse("Bearer ${BuildConfig.QWEN_API_KEY}", request)
-                val content = response.choices.firstOrNull()?.message?.content ?:return@withContext null
+                val rawContent = response.choices.firstOrNull()?.message?.content
+                val content = rawContent as? String ?: return@withContext null
 
                 val cleanJson = content
                     .replace("```json", "")
@@ -157,7 +163,8 @@ class ChatRepository {
             var aiContent = "..."
             try {
                 val response = apiService.getChatResponse("Bearer ${BuildConfig.QWEN_API_KEY}", request)
-                aiContent = response.choices.firstOrNull()?.message?.content ?: "(无回复)"
+                val rawContent = response.choices.firstOrNull()?.message?.content
+                aiContent = (rawContent as? String) ?: "(无回复)"
             } catch (e: Exception) {
                 e.printStackTrace()
                 aiContent = "连接断开了... (${e.message})"
@@ -190,13 +197,18 @@ class ChatRepository {
 
         // 2. 构造当前消息的 content
         val currentContent: Any = if (imageToSend != null) {
-            // VL 模型的格式：[{"image": "http..."}, {"text": "..."}]
             listOf(
-                ContentItem(image = imageToSend),
-                ContentItem(text = newUserMessage)
+                mapOf(
+                    "type" to "image_url",
+                    "image_url" to mapOf("url" to imageToSend)
+                ),
+                mapOf(
+                    "type" to "text",
+                    "text" to newUserMessage
+                )
             )
         } else {
-            newUserMessage // 没图就还是传纯文本
+            newUserMessage
         }
         val systemPrompt = if (persona.isMine) {
             // 共生模式 Prompt ... (复制之前的代码)
@@ -217,7 +229,7 @@ class ChatRepository {
             val role = if (chatMsg.isFromUser) "user" else "assistant"
             apiMessages.add(ApiMessage(role = role, content = chatMsg.text))
         }
-        apiMessages.add(ApiMessage(role = "user", content = currentContent.toString()))
+        apiMessages.add(ApiMessage(role = "user", content = currentContent))
 
         val request = ChatRequest(
             model = modelName,
@@ -283,7 +295,8 @@ class ChatRepository {
 
             try {
                 val response = apiService.getChatResponse("Bearer ${BuildConfig.QWEN_API_KEY}", request)
-                response.choices.firstOrNull()?.message?.content ?: ""
+                val rawContent = response.choices.firstOrNull()?.message?.content
+                (rawContent as? String) ?: ""
             } catch (e: Exception) {
                 e.printStackTrace()
                 ""
@@ -298,6 +311,32 @@ class ChatRepository {
         } catch (e: Exception) {
             e.printStackTrace()
             // 可以在这里处理重试逻辑
+        }
+    }
+    // 1. 新增：上传图片辅助方法
+    suspend fun uploadImage(uri: Uri): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                // 获取全局 Context
+                val context = MyApplication.instance // ⚠️ 注意：这里需要你修改 MyApplication 暴露 context，或者直接传进来
+                // 为了简单，我们假设 MyApplication 有一个 instance 或者 context 静态变量
+                // 如果没有，建议在 MyApplication companion object 里加一个 lateinit var context: Context
+                // 这里暂时用一个伪代码，你需要确保能拿到 Context
+                val resolver = context.contentResolver
+
+                val inputStream = resolver.openInputStream(uri) ?: return@withContext null
+                val bytes = inputStream.readBytes()
+                inputStream.close()
+
+                val requestFile = bytes.toRequestBody("image/*".toMediaTypeOrNull())
+                val body = MultipartBody.Part.createFormData("file", "upload.jpg", requestFile)
+
+                val response = backendService.uploadImage(body)
+                if (response.isSuccess()) response.data else null
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
         }
     }
 }
