@@ -28,7 +28,7 @@ import com.example.persona.data.Conversation
 @Composable
 fun ChatListScreen(
     onNavigateToChatDetail: (String) -> Unit, // 点击跳转到具体聊天
-    onNavigateToFollowList: () -> Unit, // 🔥 新增回调
+    onNavigateToFollowList: () -> Unit,
     viewModel: ChatListViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -44,7 +44,7 @@ fun ChatListScreen(
             CenterAlignedTopAppBar(title = { Text("消息") })
             CenterAlignedTopAppBar(
                 title = { Text("消息") },
-                // 🔥 新增：右上角入口
+                // 新增：右上角入口
                 actions = {
                     IconButton(onClick = onNavigateToFollowList) {
                         Icon(

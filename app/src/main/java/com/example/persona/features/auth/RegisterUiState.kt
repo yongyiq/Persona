@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// 复用 LoginUiState 或者是新建一个类似的，为了简单我们这里直接复用结构
+// 复用 LoginUiState
 data class RegisterUiState(
     val username: String = "",
     val password: String = "",
@@ -49,7 +49,7 @@ class RegisterViewModel : ViewModel() {
                 val response = NetworkModule.backendService.register(request)
 
                 if (response.isSuccess() && response.data != null) {
-                    // 2. 注册成功后，直接视为已登录 (Auto Login)
+                    // 2. 注册成功后
                     // 保存返回的用户 ID
                     MyApplication.prefs.saveUserId(response.data.id)
                     // 清除可能残留的 Active Persona

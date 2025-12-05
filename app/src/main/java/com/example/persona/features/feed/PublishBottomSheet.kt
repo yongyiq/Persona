@@ -63,7 +63,7 @@ fun PublishBottomSheet(
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline
                 )
             )
-            // 🔥 新增：图片预览区
+            // 新增：图片预览区
             if (selectedImageUri != null) {
                 Box(modifier = Modifier.padding(vertical = 8.dp)) {
                     AsyncImage(
@@ -108,7 +108,7 @@ fun PublishBottomSheet(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // 2. 🔥 新增：图片选择按钮
+                // 2. 新增：图片选择按钮
                 // 只有在没有生成 AI 内容时才允许选图 (或者你可以随时允许)
                 IconButton(
                     onClick = {

@@ -35,7 +35,7 @@ fun MessageBubble(msg: ChatMessage) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         // 如果是"我"，内容靠右；如果是"AI"，内容靠左
         horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start
     ) {
@@ -44,18 +44,18 @@ fun MessageBubble(msg: ChatMessage) {
             modifier = Modifier
                 // 气泡背景色：我是主色(Primary)，AI是次级容器色(SecondaryContainer)
                 .background(
-                    color = if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                    color = if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
+                        topStart = 20.dp,
+                        topEnd = 20.dp,
                         // 根据左右位置，调整底角的圆角，形成"气泡"形状
-                        bottomStart = if (isMe) 16.dp else 4.dp,
-                        bottomEnd = if (isMe) 4.dp else 16.dp
+                        bottomStart = if (isMe) 20.dp else 4.dp,
+                        bottomEnd = if (isMe) 4.dp else 20.dp
                     )
                 )
-                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 // 限制气泡最大宽度，不要占满整行，稍微留点白
-                .widthIn(max = 300.dp)
+                .widthIn(max = 280.dp)
         ) {
             if (msg.isImage) {
                 // --- 渲染图片 ---
@@ -86,8 +86,7 @@ fun MessageBubble(msg: ChatMessage) {
                         markdown = msg.text,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             color = if (isMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
-                        ),
-                        // 可选：如果 MarkdownText 支持 isTextSelectable 等参数也可配置
+                        )
                     )
                 }
             }

@@ -27,16 +27,16 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.persona.data.Persona
 
+// ... (保留原有的 imports)
+
 @Composable
 fun MeScreen(
     onNavigateToChat: (String) -> Unit,
     onNavigateToCreate: () -> Unit,
-    onLogout: () -> Unit, // 新增回调
+    onLogout: () -> Unit,
     viewModel: MeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    // 找到当前激活的 Persona 对象
     val activePersona = uiState.myPersonas.find { it.id == uiState.activePersonaId }
         ?: uiState.myPersonas.firstOrNull()
 
@@ -44,123 +44,124 @@ fun MeScreen(
         viewModel.loadMyPersonas()
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (uiState.isLoading && uiState.myPersonas.isEmpty()) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        } else {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // --- 1. 顶部：角色切换栏 ---
-                Text(
-                    text = "切换当前身份",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+    // 移除了最外层的 Box，直接使用 Column 作为主容器
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // --- 1. 顶部：角色切换栏 (保持不变) ---
+        Text(
+            text = "切换当前身份",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+        )
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items(uiState.myPersonas) { persona ->
+                PersonaAvatarItem(
+                    persona = persona,
+                    isActive = persona.id == uiState.activePersonaId,
+                    onClick = { viewModel.switchPersona(persona.id) }
                 )
-
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            }
+            item {
+                IconButton(
+                    onClick = onNavigateToCreate,
+                    modifier = Modifier
+                        .size(50.dp)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                 ) {
-                    // 显示所有 Persona 头像
-                    items(uiState.myPersonas) { persona ->
-                        PersonaAvatarItem(
-                            persona = persona,
-                            isActive = persona.id == uiState.activePersonaId,
-                            onClick = { viewModel.switchPersona(persona.id) }
-                        )
-                    }
-
-                    // 末尾加一个“创建”按钮
-                    item {
-                        IconButton(
-                            onClick = onNavigateToCreate,
-                            modifier = Modifier
-                                .size(50.dp)
-                                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Create")
-                        }
-                    }
+                    Icon(Icons.Default.Add, contentDescription = "Create")
                 }
+            }
+        }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                Divider()
+        Spacer(modifier = Modifier.height(24.dp))
+        Divider()
 
-                // --- 2. 下方：当前角色的详细信息 ---
-                if (activePersona != null) {
-                    Column(
+        // --- 2. 中间内容区域 (使用 weight(1f) 占据剩余空间) ---
+        Box(
+            modifier = Modifier
+                .weight(1f) // 关键：让这个区域占据除去顶部和底部按钮外的所有空间
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center // 让空状态文字居中
+        ) {
+            if (activePersona != null) {
+                // 有 Persona 时显示详情 (注意：这里移除了原来的 Spacer(weight) 和 退出按钮)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(activePersona.avatarUrl)
+                            .placeholder(android.R.drawable.ic_menu_myplaces)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = activePersona.name,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "当前活跃身份 (Active)",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Spacer(modifier = Modifier.height(48.dp))
+
+                    Button(
+                        onClick = { onNavigateToChat(activePersona.id) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .height(56.dp)
                     ) {
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // 大头像
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(activePersona.avatarUrl)
-                                .placeholder(android.R.drawable.ic_menu_myplaces)
-                                .build(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape)
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // 名字
-                        Text(
-                            text = activePersona.name,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // 状态
-                        Text(
-                            text = "当前活跃身份 (Active)",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        Spacer(modifier = Modifier.height(48.dp))
-
-                        // 共生按钮 (传入当前 active ID)
-                        Button(
-                            onClick = { onNavigateToChat(activePersona.id) },
-                            modifier = Modifier.fillMaxWidth().height(56.dp)
-                        ) {
-                            Text("进入共生空间 (Evolve Chat)")
-                        }
-
-                        Spacer(modifier = Modifier.weight(1f)) // 顶到底部
-
-                        OutlinedButton(
-                            onClick = {
-                                // 调用 ViewModel 处理退出
-                                viewModel.logout()
-                                onLogout()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                        ) {
-                            Text("退出登录")
-                        }
-                    }
-                } else {
-                    // 空状态
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("还没有角色，点击上方 + 号创建")
+                        Text("进入共生空间 (Evolve Chat)")
                     }
                 }
+            } else {
+                // 空状态时显示提示
+                Text("还没有角色，点击上方 + 号创建")
+            }
+        }
+
+        // --- 3. 底部：退出登录按钮 (始终显示) ---
+        // 将按钮移到了 if/else 之外，无论是否有 Persona 都会显示
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            OutlinedButton(
+                onClick = {
+                    viewModel.logout()
+                    onLogout()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("退出登录")
             }
         }
     }

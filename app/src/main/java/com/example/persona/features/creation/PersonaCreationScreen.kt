@@ -41,7 +41,7 @@ fun PersonaCreationScreen(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> viewModel.onAvatarSelected(uri) }
     )
-    // 🔥 核心修复：监听成功状态
+    // 监听成功状态
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             onCreationCompleted() // 只有当 success 变成 true 时，才执行跳转
@@ -88,8 +88,6 @@ fun PersonaCreationScreen(
             ){
                 // 显示逻辑：
                 // 1. 如果用户选了图 (uiState.avatarUri)，显示选中的图
-                // 2. 如果没选但输入了名字 (uiState.name)，显示 DiceBear 预览
-                // 3. 否则显示默认占位符
                 val model = if (uiState.avatarUri != null) {
                     uiState.avatarUri
                 } else if (uiState.name.isNotBlank()) {

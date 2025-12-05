@@ -33,10 +33,10 @@ class BackendApiTest {
                 Log.d("BackendTest", "第一个 Persona: ${firstPersona?.name}")
                 assertEquals("Kira", firstPersona?.name)
 
-                Log.i("BackendTest", "✅ 成功连上本地 Spring Boot！")
+                Log.i("BackendTest", "成功连上本地 Spring Boot！")
 
             } catch (e: Exception) {
-                Log.e("BackendTest", "❌ 连接失败: ${e.message}")
+                Log.e("BackendTest", "连接失败: ${e.message}")
                 e.printStackTrace()
                 throw e
             }

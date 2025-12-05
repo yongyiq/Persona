@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,11 +32,14 @@ import coil.request.ImageRequest
 import com.example.persona.data.MockData
 import com.example.persona.data.Post
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
@@ -78,7 +82,14 @@ fun PostCard(
     Card(
         modifier = Modifier
             .fillMaxWidth() // 填充最大宽度
-            .padding(horizontal = 16.dp, vertical = 8.dp) // 设置水平和垂直内边距
+            .padding(horizontal = 16.dp, vertical = 8.dp), // 设置水平和垂直内边距
+        // 优化 1: 增加圆角和阴影，提升层次感
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        // 优化 2: 使用 Surface 颜色，确保在深色模式下有区分度
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        )
     ) {
         // 使用 Column 在垂直方向上排列 UI 元素
         Column(
@@ -122,7 +133,7 @@ fun PostCard(
                     val buttonText = if (post.isFollowing) "已关注" else "+ 关注"
                     val buttonColor = if (post.isFollowing) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer
 
-                    TextButton(
+                    FilledTonalButton(
                         onClick = { onFollowClick(post) },
                         colors = ButtonDefaults.textButtonColors(containerColor = buttonColor),
                         modifier = Modifier.height(32.dp)
@@ -138,11 +149,12 @@ fun PostCard(
             if (post.content.isNotBlank()) {
                 Text(
                     text = post.content,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    lineHeight = 24.sp
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
-            // 3. 🔥 新增：帖子配图渲染
+            // 3. 新增：帖子配图渲染
             if (!post.imageUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
@@ -155,7 +167,7 @@ fun PostCard(
                     contentScale = ContentScale.Crop, // 裁剪模式：填满容器，多余裁剪
                     modifier = Modifier
                         .fillMaxWidth() // 宽度撑满
-                        .heightIn(max = 200.dp) // 🔥 关键：限制最大高度，防止长图占满屏幕
+                        .aspectRatio(16f / 9f) // 🔥 关键：限制最大高度，防止长图占满屏幕
                         .clip(RoundedCornerShape(12.dp)) // 给图片加个圆角，更好看
                         .clickable { showImageDialog = true } // 点击弹出大图
                 )

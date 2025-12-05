@@ -45,7 +45,7 @@ class ChatRepository {
         return withContext(Dispatchers.IO) {
             try {
             // 新增: 动态获取当前用户 ID
-                val currentUserId = com.example.persona.MyApplication.prefs.getUserId()
+                val currentUserId = MyApplication.prefs.getUserId()
                 // personaId String -> Long
                 val pId = personaId.toLongOrNull() ?: return@withContext emptyList()
 
@@ -121,9 +121,8 @@ class ChatRepository {
         return withContext(Dispatchers.IO) {
             val pId = persona.id.toLongOrNull() ?: 0L
             // 新增: 动态获取当前用户 ID
-            val currentUserId = com.example.persona.MyApplication.prefs.getUserId()
+            val currentUserId = MyApplication.prefs.getUserId()
             // --- A. 异步保存用户的消息到后端 ---
-            // 我们不等待它保存成功才发请求，而是“发后即忘”或异步处理，提高速度
             val userMsgObj = ChatMessage(
                 text = newUserMessage,
                 userId = currentUserId,
@@ -262,10 +261,10 @@ class ChatRepository {
                         val content = chunk.choices.firstOrNull()?.delta?.content
 
                         if (!content.isNullOrEmpty()) {
-                            emit(content) // 🌊 发射增量文本
+                            emit(content) // 发射增量文本
                         }
                     } catch (e: Exception) {
-                        // 解析单行失败，忽略，继续下一行
+
                     }
                 }
             }
@@ -305,12 +304,10 @@ class ChatRepository {
     }
     // 封装一下，方便 ViewModel 调用
     suspend fun syncToBackend(msg: ChatMessage) {
-        // 后端接口可能不需要 id (如果是自增)，或者需要转换一下格式
         try {
             backendService.syncMessage(msg)
         } catch (e: Exception) {
             e.printStackTrace()
-            // 可以在这里处理重试逻辑
         }
     }
     // 1. 新增：上传图片辅助方法
@@ -318,10 +315,8 @@ class ChatRepository {
         return withContext(Dispatchers.IO) {
             try {
                 // 获取全局 Context
-                val context = MyApplication.instance // ⚠️ 注意：这里需要你修改 MyApplication 暴露 context，或者直接传进来
-                // 为了简单，我们假设 MyApplication 有一个 instance 或者 context 静态变量
-                // 如果没有，建议在 MyApplication companion object 里加一个 lateinit var context: Context
-                // 这里暂时用一个伪代码，你需要确保能拿到 Context
+                val context = MyApplication.instance
+
                 val resolver = context.contentResolver
 
                 val inputStream = resolver.openInputStream(uri) ?: return@withContext null

@@ -35,7 +35,7 @@ class ImageGenerationApiTest {
 
             try {
                 // 2. 调用后端接口
-                // ⚠️ 确保你的 BackendApiService 中已经定义了 generateImage 方法
+                // 确保你的 BackendApiService 中已经定义了 generateImage 方法
                 val response = NetworkModule.backendService.generateImage(requestMsg)
 
                 Log.d(TAG, "收到响应: Code=${response.code}, Msg=${response.message}")
@@ -59,10 +59,10 @@ class ImageGenerationApiTest {
                 // 验证发送者是否为 AI (isFromUser = false)
                 assertEquals("发送者应该是 AI", false, imageMsg.isFromUser)
 
-                Log.i(TAG, "✅ 文生图 API 测试通过！图片 URL: ${imageMsg.text}")
+                Log.i(TAG, "文生图 API 测试通过！图片 URL: ${imageMsg.text}")
 
             } catch (e: Exception) {
-                Log.e(TAG, "❌ 测试失败: ${e.message}")
+                Log.e(TAG, "测试失败: ${e.message}")
                 e.printStackTrace()
                 throw e
             }

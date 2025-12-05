@@ -18,7 +18,7 @@ class MultiModalChatTest {
     @Test
     fun testImageUnderstanding() {
         runBlocking {
-            Log.d(TAG, "🖼️ 开始测试多模态（图文）对话...")
+            Log.d(TAG, "开始测试多模态（图文）对话...")
 
             // 1. 准备测试数据
             val repository = ChatRepository()
@@ -41,7 +41,7 @@ class MultiModalChatTest {
                     persona = persona,
                     messageHistory = emptyList(), // 不带历史记录
                     newUserMessage = prompt,
-                    imageToSend = testImageUrl // 🔥 传入图片 URL
+                    imageToSend = testImageUrl // 传入图片 URL
                 )
 
                 // 3. 收集流式响应
@@ -56,7 +56,7 @@ class MultiModalChatTest {
 
                 val fullResponse = fullResponseBuilder.toString()
                 
-                Log.d(TAG, "🤖 AI 回复完整内容: \n$fullResponse")
+                Log.d(TAG, "AI 回复完整内容: \n$fullResponse")
 
                 // 4. 断言验证
                 assertTrue("回复内容不应为空", fullResponse.isNotBlank())
@@ -70,10 +70,10 @@ class MultiModalChatTest {
                                  
                 assertTrue("AI 应该能识别出图中的'女孩'或'狗'", isRelevant)
 
-                Log.i(TAG, "✅ 多模态测试通过！Qwen-VL 模型工作正常。")
+                Log.i(TAG, "多模态测试通过！Qwen-VL 模型工作正常。")
 
             } catch (e: Exception) {
-                Log.e(TAG, "❌ 测试失败: ${e.message}")
+                Log.e(TAG, "测试失败: ${e.message}")
                 e.printStackTrace()
                 throw e
             }

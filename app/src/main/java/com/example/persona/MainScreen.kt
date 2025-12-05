@@ -136,7 +136,7 @@ fun MainScreen() {
                         // 点击列表项，跳转到具体的聊天界面 (带参数)
                         navController.navigate(AppScreen.Chat.createRoute(personaId))
                     },
-                    // 🔥 传入跳转逻辑
+                    // 传入跳转逻辑
                     onNavigateToFollowList = {
                         navController.navigate(AppScreen.FollowList.route)
                     }
@@ -196,7 +196,7 @@ fun MainScreen() {
                     }
                 )
             }
-            // 🔥 新增：登录页路由
+            // 新增：登录页路由
             composable(AppScreen.Login.route) {
                 LoginScreen(
                     onLoginSuccess = {

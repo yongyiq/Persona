@@ -111,12 +111,8 @@ class PersonaCreationViewModel : ViewModel() {
 
                 if (response.isSuccess()) {
                     // 保存成功！
-                    // 这里通常不需要手动更新本地 MockData 了
-                    // 因为跳转回主页后，MeScreen 会重新拉取最新的列表
+                    // MeScreen 会重新拉取最新的列表
                     _uiState.update { it.copy(isLoading = false, isSuccess = true) }
-
-                    // 触发跳转逻辑 (这一步通常通过 Effect 或回调在 UI 层处理，这里简化处理)
-                    // 实际代码中，你可以设置一个标志位让 UI 监听
                 } else {
                     _uiState.update { it.copy(errorMsg = "保存失败: ${response.message}", isLoading = false) }
                 }

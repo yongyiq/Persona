@@ -93,17 +93,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             e.printStackTrace()
         }
     }
-    // 1. 加载我的 Persona 信息 (用于显示在发布栏头部)
-//    private fun loadMyPersonaInfo() {
-//        viewModelScope.launch {
-//            // 暂时硬编码 ID=1，对应数据库的 Kira
-//            val userId = com.example.persona.MyApplication.prefs.getUserId()
-//            val response = NetworkModule.backendService.getMyPersonas(userId = userId)
-//            if (response.isSuccess() && !response.data.isNullOrEmpty()) {
-//                _uiState.update { it.copy(myPersona = response.data.first()) }
-//            }
-//        }
-//    }
+
     // 2. 控制弹窗开关
     fun openPublishSheet() { _uiState.update { it.copy(isSheetOpen = true) } }
     fun closePublishSheet() { _uiState.update { it.copy(isSheetOpen = false, publishContent = "") } }
@@ -184,7 +174,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.update { it.copy(isLoading = false) }
         }
     }
-    // 🔥 新增：处理关注点击
+    // 新增：处理关注点击
     fun toggleFollow(post: Post) {
         viewModelScope.launch {
             val currentUserId = MyApplication.prefs.getUserId()

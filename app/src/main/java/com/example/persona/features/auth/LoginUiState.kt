@@ -40,7 +40,7 @@ class LoginViewModel : ViewModel() {
                 val response = NetworkModule.backendService.login(request)
 
                 if (response.isSuccess() && response.data != null) {
-                    // 🔥 核心：保存用户 ID！
+                    // 保存用户 ID！
                     // 这样整个 App 的后续操作（MeScreen, ChatScreen）都会基于这个 ID
                     MyApplication.prefs.saveUserId(response.data.id)
                     
@@ -56,6 +56,4 @@ class LoginViewModel : ViewModel() {
             }
         }
     }
-    
-    // 你也可以加一个 register() 方法，逻辑类似
 }

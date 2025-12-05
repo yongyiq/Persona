@@ -62,7 +62,7 @@ class ChatViewModel : ViewModel() {
             }
             val target = repository.getPersonaById(personaId)
             val finalTarget = target ?: MockData.myPersona
-            // 2. 加载历史记录 (这是新增的！)
+            // 2. 加载历史记录
 
             // 3. 更新 UI 显示目标名字/头像
             _uiStates.update { it.copy(targetPersona = finalTarget) }
@@ -126,7 +126,7 @@ class ChatViewModel : ViewModel() {
                 } catch (e: Exception) { e.printStackTrace() }
             }
 
-            // ⚡️ 简单的指令判断
+            // 简单的指令判断
             val isImageRequest = textToSend.startsWith("/image") || textToSend.startsWith("画一张")
 
             if (isImageRequest) {
@@ -236,7 +236,7 @@ class ChatViewModel : ViewModel() {
 
                 val finalAiMsg = ChatMessage(
                     id = null, // ID 交给后端生成，或者传 null
-                    text = fullResponse, // 🔥 这里存的是最终拼好的完整文本
+                    text = fullResponse, // 这里存的是最终拼好的完整文本
                     userId = currentUserId,
                     personaId = targetPersonaId,
                     isFromUser = false
@@ -246,7 +246,7 @@ class ChatViewModel : ViewModel() {
                         repository.syncToBackend(finalAiMsg) // 此时调用 syncMessage
                     } catch (e: Exception) { e.printStackTrace() }
                 }
-                // 4. 流结束，同步到后端数据库 (可选，保持数据一致性)
+                // 4. 流结束，同步到后端数据库
                 _uiStates.update { state ->
                     val updatedList = state.message.map { msg ->
                         if (msg.id == aiMsgId) {

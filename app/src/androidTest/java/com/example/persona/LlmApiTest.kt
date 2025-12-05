@@ -48,10 +48,10 @@ class LlmApiTest {
                 Log.d(TAG, "AI 回复内容: $content")
                 assertNotNull("回复内容不能为 null", content)
 
-                Log.i(TAG, "✅ 测试通过！API 连接正常。")
+                Log.i(TAG, "测试通过！API 连接正常。")
 
             } catch (e: Exception) {
-                Log.e(TAG, "❌ 测试失败: ${e.message}")
+                Log.e(TAG, "测试失败: ${e.message}")
                 e.printStackTrace()
                 throw e
             }

@@ -71,7 +71,7 @@ fun ChatScreen(
         }
     }
 
-    // 1. 🔥 新增：图片选择器启动器
+    // 1. 新增：图片选择器启动器
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> viewModel.onImageSelected(uri) }
@@ -110,7 +110,7 @@ fun ChatScreen(
                 onTextChanged = { viewModel.onInputTextChange(it) },
                 onSendClick = { viewModel.sendMessage() },
                 isTyping = uiState.isTyping,
-                // 🔥 新增：传入图片相关参数
+                // 新增：传入图片相关参数
                 selectedImageUri = viewModel.selectedImageUri.value, // 需要在 ViewModel 中定义这个 State
                 onImageSelect = {
                     // 启动相册
@@ -142,7 +142,6 @@ fun ChatScreen(
     }
 }
 
-// --- 抽离出来的底部输入区域组件 ---
 @Composable
 fun ChatInputArea(
     text: String,
@@ -159,7 +158,7 @@ fun ChatInputArea(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // 🔥 1. 图片预览区 (如果有选图才显示)
+        // 1. 图片预览区 (如果有选图才显示)
         if (selectedImageUri != null) {
             Box(
                 modifier = Modifier
@@ -194,7 +193,7 @@ fun ChatInputArea(
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 🔥 新增：图片选择按钮 (+)
+            // 新增：图片选择按钮 (+)
             IconButton(
                 onClick = onImageSelect,
                 enabled = !isTyping
