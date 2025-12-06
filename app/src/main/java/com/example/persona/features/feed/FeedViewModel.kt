@@ -31,6 +31,7 @@ data class FeedUiState(
     val isLoading: Boolean = false,
 
     // --- 发布相关状态 ---
+    val isRefreshing: Boolean = false,
     val isSheetOpen: Boolean = false, // 弹窗是否打开
     val publishContent: String = "",  // 输入框里的内容
     val isGenerating: Boolean = false, // AI 是否正在写
@@ -119,29 +120,12 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     // 加载动态
+    // 1. 修改 loadFeed，改为调用提取出来的 fetchFeedData
     private fun loadFeed() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                val currentUserId = MyApplication.prefs.getUserId()
-                val userId = MyApplication.prefs.getUserId()
-                val response = NetworkModule.backendService.getFeed(userId)
-
-                if (response.isSuccess() && response.data != null) {
-                    val processedPosts = response.data.map { post ->
-                        val author = post.authorPersona.copy(
-                            isMine = (post.authorPersona.ownerId == currentUserId)
-                        )
-                        post.copy(authorPersona = author)
-                    }
-                    _uiState.update { it.copy(posts = processedPosts, isLoading = false) }
-                } else {
-                    _uiState.update { it.copy(isLoading = false) }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _uiState.update { it.copy(isLoading = false) }
-            }
+            _uiState.update { it.copy(isLoading = true) } // 全屏 Loading
+            fetchFeedData()
+            _uiState.update { it.copy(isLoading = false) }
         }
     }
 
@@ -197,6 +181,36 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                 // 如果失败，可以在这里回滚 UI (可选)
                 e.printStackTrace()
             }
+        }
+    }
+    // 🔥 2. 新增：专门给下拉刷新用的方法
+    fun refreshFeed() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) } // 顶部刷新 Loading
+            fetchFeedData()
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
+    // 🔥 3. 提取出来的通用拉取逻辑 (private suspend)
+    private suspend fun fetchFeedData() {
+        try {
+            val currentUserId = MyApplication.prefs.getUserId()
+            // 注意：这里用 currentUserId 获取 Feed，确保能看到关注状态
+            val response = NetworkModule.backendService.getFeed(currentUserId)
+
+            if (response.isSuccess() && response.data != null) {
+                val processedPosts = response.data.map { post ->
+                    val author = post.authorPersona.copy(
+                        isMine = (post.authorPersona.ownerId == currentUserId)
+                    )
+                    post.copy(authorPersona = author)
+                }
+                // 只更新数据，不负责关 Loading（由调用者负责）
+                _uiState.update { it.copy(posts = processedPosts) }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // 失败时也可以弹个 Toast，这里暂且忽略
         }
     }
     // 辅助：上传图片
